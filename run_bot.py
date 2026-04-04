@@ -39,11 +39,25 @@ def is_archive_ready(game_start_utc):
     return datetime.now(timezone.utc) > game_start_utc + timedelta(hours=4, minutes=30)
 
 
+def get_radio_media_id(broadcasts, team_id):
+    """Return the mediaId for the team's English radio broadcast, or None."""
+    for b in broadcasts:
+        if (b.get("type") in ("AM", "FM")
+                and b.get("language") == "en"
+                and b.get("availableForStreaming")
+                and b.get("mediaId")):
+            return b["mediaId"]
+    return None
+
+
 def get_recent_gamepks(team_id=137):
     now_utc = datetime.now(timezone.utc)
     start_date = (now_utc - timedelta(days=7)).strftime("%Y-%m-%d")
     end_date = (now_utc + timedelta(days=1)).strftime("%Y-%m-%d")
-    url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId={team_id}&startDate={start_date}&endDate={end_date}"
+    url = (
+        f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId={team_id}"
+        f"&startDate={start_date}&endDate={end_date}&hydrate=broadcasts(all)"
+    )
     res = fetch_with_retry(url, timeout=10)
     if res is None:
         print("❌ Could not fetch MLB schedule")
@@ -55,15 +69,18 @@ def get_recent_gamepks(team_id=137):
             if game["status"]["detailedState"] in ("Final", "Completed Early"):
                 game_start_utc = parse(game["gameDate"])  # dateutil handles the Z suffix → timezone-aware UTC
                 official_date = date_entry["date"].replace("-", "")
+                broadcasts = game.get("broadcasts", [])
+                media_id = get_radio_media_id(broadcasts, team_id)
                 games.append((
                     game_start_utc,
                     game["gamePk"],
                     game["teams"]["away"]["team"]["name"],
                     game["teams"]["home"]["team"]["name"],
                     official_date,
+                    media_id,
                 ))
     games.sort(reverse=True)
-    return [(pk, away, home, d, start) for start, pk, away, home, d in games]
+    return [(pk, away, home, d, start, mid) for start, pk, away, home, d, mid in games]
 
 
 def already_posted(gamepk, path=None):
@@ -82,8 +99,10 @@ def mark_as_posted(gamepk, path=None):
         f.write(f"{gamepk}\n")
 
 
-def send_telegram_message(gamepk, away, home, date=""):
+def send_telegram_message(gamepk, away, home, date="", media_id=None):
     web_url = f"https://golazosteve.github.io/SFGRadioArchived/watch/?g={gamepk}&d={date}"
+    if media_id:
+        web_url += f"&m={media_id}"
     message = f"📻 {away} @ {home}"
     payload = {
         "chat_id": TELEGRAM_CHAT_ID,
@@ -114,7 +133,7 @@ def main():
     games = get_recent_gamepks(team_id=TEAM_ID)
     print(f"🧾 Found {len(games)} recent final games")
 
-    for gamepk, away, home, date, game_start in games:
+    for gamepk, away, home, date, game_start, media_id in games:
         print(f"🔍 Checking gamePk: {gamepk} ({away} @ {home})")
 
         if not FORCE_POST and already_posted(gamepk):
@@ -125,7 +144,12 @@ def main():
             print(f"⏳ Archive not ready yet (game started {game_start})")
             continue
 
-        if send_telegram_message(gamepk, away, home, date):
+        if media_id:
+            print(f"📡 Radio mediaId: {media_id}")
+        else:
+            print("⚠️ No radio broadcast found for this game")
+
+        if send_telegram_message(gamepk, away, home, date, media_id):
             mark_as_posted(gamepk)
             print(f"✅ Posted radio link for {gamepk}")
         else:

@@ -31,14 +31,16 @@
     var params  = new URLSearchParams(window.location.search);
     var gamePk  = params.get('g');
     var date    = params.get('d') || '';
+    var mediaId = params.get('m') || '';
     if (!gamePk) { window.location = 'https://www.mlb.com'; }
 
-    var deepLink = 'mlbatbat://mlbtv?gamepk=' + gamePk + (date ? '&date=' + date : '');
-    var webUrl   = 'https://www.mlb.com/tv/g' + gamePk;
+    var radioUrl = mediaId
+      ? 'https://www.mlb.com/tv/g' + gamePk + '/v' + mediaId
+      : 'https://www.mlb.com/tv/g' + gamePk;
 
     document.getElementById('links').innerHTML =
-      '<a class="btn primary" href="' + deepLink + '">Listen in MLB App</a><br>' +
-      '<a class="btn secondary" href="' + webUrl + '">Listen in Browser</a>';
+      '<a class="btn primary" href="' + radioUrl + '">Listen in MLB App</a><br>' +
+      '<a class="btn secondary" href="' + radioUrl + '">Listen in Browser</a>';
   </script>
 </body>
 </html>
