@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Listen on MLB</title>
+  <style>
+    body { font-family: sans-serif; display: flex; align-items: center;
+           justify-content: center; min-height: 100vh; margin: 0;
+           background: #000000; color: #fff; text-align: center; padding: 1rem; }
+    .btn { display: inline-block; margin: 0.5rem; padding: 0.9rem 2rem;
+           border-radius: 8px; text-decoration: none; font-size: 1.1rem; font-weight: bold; }
+    .primary { background: #FD5A1E; color: #fff; }
+    .secondary { background: transparent; color: #FD5A1E; border: 2px solid #FD5A1E; font-size: 0.95rem; }
+    .tagline { font-size: 1.2rem; margin-bottom: 1.5rem; min-height: 1.6rem; }
+    .footer { margin-top: 2.5rem; font-size: 0.75rem; color: #555; }
+    .thanks { display: inline-block; margin-top: 0.4rem; color: #FD5A1E;
+              font-size: 0.75rem; text-decoration: none; border-bottom: 1px solid #FD5A1E; }
+  </style>
+</head>
+<body>
+  <div>
+    <p class="tagline">📻</p>
+    <div id="links"></div>
+    <div class="footer">
+      Made possible by Steve Klein.<br>
+      <a class="thanks" href="https://paypal.me/sdklein" target="_blank">Say thanks</a>
+    </div>
+  </div>
+  <script>
+    var params  = new URLSearchParams(window.location.search);
+    var gamePk  = params.get('g');
+    var date    = params.get('d') || '';
+    if (!gamePk) { window.location = 'https://www.mlb.com'; }
+
+    var deepLink = 'mlbatbat://mlbtv?gamepk=' + gamePk + (date ? '&date=' + date : '');
+    var webUrl   = 'https://www.mlb.com/tv/g' + gamePk;
+
+    document.getElementById('links').innerHTML =
+      '<a class="btn primary" href="' + deepLink + '">Listen in MLB App</a><br>' +
+      '<a class="btn secondary" href="' + webUrl + '">Listen in Browser</a>';
+  </script>
+</body>
+</html>
