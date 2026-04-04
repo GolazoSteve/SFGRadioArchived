@@ -1,0 +1,41 @@
+name: Radio Archive Post
+
+on:
+  schedule:
+    - cron: '*/30 4-11 * * *'   # Every 30 min, 4–11 AM UTC (5 AM–noon UK BST)
+  workflow_dispatch:
+    inputs:
+      force_post:
+        description: 'Force post (skip duplicate check)'
+        required: false
+        default: 'false'
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install -r requirements.txt
+
+      - name: Run bot
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          FORCE_POST: ${{ github.event.inputs.force_post || 'false' }}
+        run: python run_bot.py
+
+      - name: Commit state file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add posted_radio.txt
+          git diff --staged --quiet || git commit -m "chore: update posted state [skip ci]"
+          git push
