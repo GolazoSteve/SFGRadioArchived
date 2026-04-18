@@ -35,8 +35,8 @@
     if (!gamePk) { window.location = 'https://www.mlb.com'; }
 
     var deepLink = mediaId
-      ? 'mlbatbat://audio?gamepk=' + gamePk + '&mediaId=' + mediaId
-      : 'mlbatbat://audio?gamepk=' + gamePk;
+      ? 'mlbatbat://mlbtv?gamepk=' + gamePk + '&v=' + mediaId
+      : 'mlbatbat://mlbtv?gamepk=' + gamePk;
     var webUrl = mediaId
       ? 'https://www.mlb.com/tv/g' + gamePk + '/v' + mediaId
       : 'https://www.mlb.com/tv/g' + gamePk;
